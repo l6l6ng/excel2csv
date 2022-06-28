@@ -6,6 +6,7 @@ import (
 	"github.com/xuri/excelize/v2"
 	"log"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -28,8 +29,13 @@ func main() {
 		}
 	}()
 
-	sheetList := f.GetSheetList()
+	dirName := dir(filePath)
+	if err := mkdir(dirName); err != nil {
+		fmt.Println(err)
+		return
+	}
 
+	sheetList := f.GetSheetList()
 	for _, sheetName := range sheetList {
 		rows, err := f.GetRows(sheetName)
 		if err != nil {
@@ -38,13 +44,13 @@ func main() {
 		}
 
 		if len(rows) > 0 {
-			saveCsv(sheetName, rows)
+			saveCsv(dirName, sheetName, rows)
 		}
 	}
 }
 
-func saveCsv(fileName string, data [][]string) {
-	handler, _ := os.Create(fileName + ".csv")
+func saveCsv(dirName, fileName string, data [][]string) {
+	handler, _ := os.Create("./" + dirName + "/" + fileName + ".csv")
 
 	defer func(handler *os.File) {
 		err := handler.Close()
@@ -63,4 +69,19 @@ func saveCsv(fileName string, data [][]string) {
 	if n != len(b) {
 		log.Fatalln(err)
 	}
+}
+
+func dir(filePath string) string {
+	filename := path.Base(filePath)
+	ext := path.Ext(filename)
+	return strings.Trim(filename, ext)
+}
+
+func mkdir(dirName string) error {
+	dirPath := "./" + dirName
+	err := os.Mkdir(dirPath, 0777)
+	if err != nil && !os.IsExist(err) {
+		return err
+	}
+	return nil
 }
